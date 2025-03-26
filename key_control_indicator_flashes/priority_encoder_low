@@ -1,0 +1,20 @@
+```verilog
+// 子模块：优先级编码器（从低位到高位找第一个0，生成加入掩码）(s2加入找最左侧熄灭的led)
+module priority_encoder_low(
+    input [7:0] data_in,  // 输入active_reg取反后的数据
+    output reg [7:0] mask_out
+);
+always @(*) begin
+    casez (data_in)
+        8'b???????1: mask_out = 8'h01;
+        8'b??????10: mask_out = 8'h02;
+        8'b?????100: mask_out = 8'h04;
+        8'b????1000: mask_out = 8'h08;
+        8'b???10000: mask_out = 8'h10;
+        8'b??100000: mask_out = 8'h20;
+        8'b?1000000: mask_out = 8'h40;
+        8'b10000000: mask_out = 8'h80;
+        default:     mask_out = 8'h00; // 无0时返回0
+    endcase
+end
+endmodule

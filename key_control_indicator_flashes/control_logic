@@ -1,0 +1,56 @@
+//实现按键控制LED的闪烁间隔和动态加入/退出功能
+module control_logic(
+    input wire sys_clk,                
+    input wire sys_rst_n,             
+	input wire key_s1_pulse,//s1脉冲，控制延时
+	input wire key_s2_pulse,//s2脉冲，控制加入
+	input wire key_s3_pulse,//s3脉冲，控制退出
+
+	output reg [2:0]interval,//闪烁间隔参数（0-4对应100ms-500ms）
+	output reg [7:0]active_reg//判断对应led是否闪烁
+);
+//闪烁间隔控制逻辑（s1）
+always@(posedge sys_clk or negedge sys_rst_n)begin
+	if(!sys_rst_n)
+		interval< = 3'd0;
+	else if(key_s1_pulse)begin
+		if(interval<3'd4)
+			interval< = interval+1;
+	end
+end
+
+//led动态加入逻辑（s2）
+
+wire [7:0] add_mask; //需要加入的LED位置掩码，指出哪个最左侧熄灭led的位置
+priority_encoder_low u_encoder_low (
+    .data_in (~active_reg),  // 输入取反，找到最低位的0
+    .mask_out(add_mask)      // 输出掩码（如0x01、0x02等）
+);
+
+always@(posedge sys_clk or negedge sys_rst_n)begin
+	if(!sys_rst_n)begin
+		active_reg< =8'h00;
+	end else if(key_s2_pulse)begin
+		//将最左侧熄灭的led置1（按位或操作）
+		if(active_reg! =8'hff)
+			active_reg< =active_reg|add_mask;
+endmodule
+
+//led动态退出逻辑（s3）
+wire [7:0] remove_mask; // 需要退出的LED位置掩码
+priority_encoder_high u_encoder_high (
+    .data_in (active_reg),   // 找到最高位的1
+    .mask_out(remove_mask)   // 输出掩码（如0x80、0x40等）
+);
+
+always@(posedge sys_clk or negedge sys_rst_n)begin
+	if(!sys_rst_n)begin
+        active_reg <= 8'h00;
+    end else if (key_s3_pulse) begin
+        // 将最右侧闪烁的LED置0（按位与操作）
+        if (active_reg != 8'h00) // 防止全0时误操作
+            active_reg <= active_reg & (~remove_mask);
+    end
+end
+endmodule
+```

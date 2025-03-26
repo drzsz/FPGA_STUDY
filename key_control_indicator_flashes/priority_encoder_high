@@ -1,0 +1,19 @@
+// 子模块：优先级编码器（从高位到低位找第一个1，生成退出掩码）
+module priority_encoder_high(
+    input [7:0] data_in,  // 输入active_reg原数据
+    output reg [7:0] mask_out
+);
+always @(*) begin
+    casez (data_in)
+        8'b1???????: mask_out = 8'h80;
+        8'b01??????: mask_out = 8'h40;
+        8'b001?????: mask_out = 8'h20;
+        8'b0001????: mask_out = 8'h10;
+        8'b00001???: mask_out = 8'h08;
+        8'b000001??: mask_out = 8'h04;
+        8'b0000001?: mask_out = 8'h02;
+        8'b00000001: mask_out = 8'h01;
+        default:     mask_out = 8'h00; // 无1时返回0
+    endcase
+end
+endmodule

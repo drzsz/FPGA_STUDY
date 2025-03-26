@@ -1,0 +1,19 @@
+module led_driver(
+	input sys_clk,
+	input sys_rst_n,
+	input reg[7:0]active_reg,//活跃led寄存器(come from control_logic)
+	input timer_pulse,//定时脉冲
+	output reg[7:0]led//led输出，高电平点亮
+);
+
+always@(posedge sys_clk or negedge sys_rst_n)begin
+	if(!sys_rst_n)begin
+		led< =8'h00;//复位时所有led熄灭
+	end else if(timer_pulse)begin
+		for(int i=0;i<8;i=i+1)begin
+			led[i]< = active_reg[i]?~led[i]:1'b0;
+		end
+	end
+end
+		
+endmodule

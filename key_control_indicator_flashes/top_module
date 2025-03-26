@@ -1,0 +1,61 @@
+module top_module(
+    input sys_clk,          // 50MHz系统时钟
+    input sys_rst_n,        // 复位信号（低有效）
+    input key_s1,       // 按键S1（低有效）
+    input key_s2,       // 按键S2（低有效）
+    input key_s3,       // 按键S3（低有效）
+    output [7:0] led           // 8个LED指示灯
+);
+
+// 信号声明,top内部所需要用到的传输信号
+wire        key_s1_pulse;     // 消抖后的S1脉冲
+wire        key_s2_pulse;     // 消抖后的S2脉冲
+wire        key_s3_pulse;     // 消抖后的S3脉冲
+wire [2:0]  interval;         // 闪烁间隔参数
+wire [7:0]  active_reg;       // 活跃LED寄存器
+wire        timer_pulse;      // 定时器脉冲
+
+// 模块实例化
+// 1. 按键消抖模块
+key_decoder #(
+    .CLK_FREQ(50_000_000),    // 50MHz时钟
+    .DEBOUNCE_MS(20)          // 20ms消抖时间
+) u_key_decoder (
+    .sys_clk      (sys_clk),
+    .sys_rst_n    (sys_rst_n),
+    .key_s1       (key_s1),
+    .key_s2       (key_s2),
+    .key_s3       (key_s3),
+    .key_s1_pulse (key_s1_pulse),
+    .key_s2_pulse (key_s2_pulse),
+    .key_s3_pulse (key_s3_pulse)
+);
+
+// 2. 控制逻辑模块
+control_logic u_control_logic (
+    .sys_clk (sys_clk),
+    .sys_rst_n (sys_rst_n),
+    .key_s1_pulse (key_s1_pulse),
+    .key_s2_pulse (key_s2_pulse),
+    .key_s3_pulse (key_s3_pulse),
+    .interval     (interval),
+    .active_reg   (active_reg)
+);
+
+// 3. 定时器模块
+timer u_timer (
+    .sys_clk (sys_clk),
+    .sys_rst_n (sys_rst_n),
+    .interval(interval),
+    .timer_pulse (timer_pulse)
+);
+
+// 4. LED驱动模块
+led_driver u_led_driver (
+    .sys_clk         (sys_clk),
+    .sys_rst_n       (sys_rst_n),
+    .active_reg  (active_reg),
+    .timer_pulse (timer_pulse),
+    .led         (led)
+);
+endmodule
